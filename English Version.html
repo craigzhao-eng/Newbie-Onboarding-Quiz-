@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Growth Platform - V15 Final Revision</title>
+    <style>
+        :root {
+            --primary: #1677ff;
+            --primary-bg: #e6f4ff;
+            --success: #52c41a;
+            --warning: #faad14;
+            --error: #ff4d4f;
+            --text-main: #1f1f1f;
+            --text-sub: #666;
+            --text-disabled: #bfbfbf;
+            
+            --bg-body: #f5f7fa;
+            --card-bg: #ffffff;
+            --radius-md: 12px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 6px 16px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-body);
+            margin: 0;
+            padding: 24px;
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        header { margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        h1 { font-size: 24px; margin: 0; color: #000; display: flex; align-items: center; gap: 12px; font-weight: 700; }
+        .version-badge { background: var(--primary-bg); color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid rgba(22, 119, 255, 0.2); }
+
+        .main-card {
+            background: var(--card-bg); border-radius: var(--radius-md); 
+            box-shadow: var(--shadow-sm); padding: 32px; margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.02);
+            overflow: hidden; 
+        }
+
+        /* --- Progress Bar & Crown --- */
+        .global-progress-wrapper { margin-bottom: 30px; }
+        .global-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; font-weight: 600; color: var(--text-sub); font-size: 14px; }
+        .percent-container { display: flex; align-items: center; gap: 8px; position: relative; }
+        .global-track { height: 12px; background: #f0f0f0; border-radius: 6px; overflow: hidden; }
+        .global-bar { 
+            height: 100%; width: 0%; 
+            background: linear-gradient(90deg, #69c0ff, #1677ff); 
+            border-radius: 6px; transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            position: relative;
+        }
+        .crown-icon {
+            font-size: 28px; line-height: 1; opacity: 0; transform: scale(0.5) translateY(10px);
+            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); position: absolute;
+            right: -40px; top: -10px; filter: drop-shadow(0 4px 6px rgba(255, 215, 0, 0.4));
+        }
+        .crown-icon.show { opacity: 1; transform: scale(1.2) translateY(0) rotate(15deg); }
+
+        /* --- Process Track --- */
+        .process-scroll-view { display: flex; overflow-x: auto; padding: 20px 10px 40px 10px; margin: 0 -20px; scroll-behavior: smooth; }
+        .process-step-unit { display: flex; flex-direction: column; min-width: 280px; flex-shrink: 0; position: relative; }
+        .process-step-unit.end-unit { min-width: auto; width: 80px; align-items: flex-start; }
+        .step-indicator-row { display: flex; align-items: center; height: 60px; position: relative; }
+        .node-circle {
+            width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 3px solid #d9d9d9; color: #999; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 2; flex-shrink: 0; transition: 0.3s;
+        }
+        .node-label { position: absolute; top: 50px; left: 20px; transform: translateX(-50%); width: 120px; text-align: center; font-size: 13px; color: var(--text-sub); font-weight: 500; white-space: nowrap; }
+        .step-connector-line { flex: 1; height: 4px; background: #f0f0f0; margin: 0 4px; border-radius: 2px; position: relative; transition: 0.3s; }
+        .step-card-container { margin-top: 30px; padding-right: 24px; display: flex; flex-direction: column; height: 100%; }
+        .phase-card {
+            background: #fff; border: 1px solid #f0f0f0; border-radius: var(--radius-md); overflow: hidden; transition: all 0.3s ease; position: relative;
+            display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.02); height: 100%;
+        }
+        .phase-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: #d6e4ff; }
+        .process-step-unit.active .node-circle { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--primary-bg); transform: scale(1.1); }
+        .process-step-unit.active .node-label { color: var(--primary); font-weight: bold; }
+        .process-step-unit.active .step-connector-line { background: repeating-linear-gradient(90deg, #e6f7ff, #e6f7ff 10px, #bae7ff 10px, #bae7ff 20px); animation: moveStripe 20s linear infinite; }
+        .process-step-unit.done .node-circle { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .process-step-unit.done .node-label { color: var(--primary); }
+        .process-step-unit.done .step-connector-line { background: var(--primary); }
+        .process-step-unit.locked .node-circle { border-color: #f0f0f0; background: #fafafa; color: #ccc; }
+        .process-step-unit.locked .phase-card { opacity: 0.7; }
+        @keyframes moveStripe { from { background-position: 0 0; } to { background-position: 400px 0; } }
+        .phase-header-box { padding: 12px 16px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .phase-header-title { font-size: 14px; font-weight: 700; }
+        .col-percent { font-size: 12px; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px; }
+        .phase-body { padding: 16px; flex: 1; display: flex; flex-direction: column; position: relative; }
+        .section-label { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 8px; margin-top: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+        .task-list { margin-bottom: 10px; flex: 1; }
+        .task-item { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; color: #444; cursor: pointer; padding: 8px; border-radius: 6px; transition: 0.2s; background: #fafafa; }
+        .task-item:hover { background: var(--primary-bg); }
+        .task-item.checked { text-decoration: line-through; color: #bbb; }
+        .custom-checkbox { width: 16px; height: 16px; border: 2px solid #d9d9d9; border-radius: 4px; display: flex; align-items: center; justify-content: center; background:#fff; flex-shrink: 0; }
+        .task-item.checked .custom-checkbox { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .doc-list { border-top: 1px dashed #eee; padding-top: 10px; margin-top: auto; }
+        .doc-link { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-sub); text-decoration: none; padding: 5px 8px; margin-bottom: 2px; border-radius: 4px; transition: 0.2s; }
+        .doc-link:hover { color: var(--primary); background: #f0f7ff; }
+        .lock-mask { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); backdrop-filter: blur(2px); z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .lock-text { font-size: 12px; color: #666; font-weight: 600; background: #fff; padding: 4px 12px; border-radius: 20px; border: 1px solid #eee; }
+        .celebration-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.5s; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: var(--radius-md); }
+        .celebration-overlay.show { opacity: 1; }
+
+        /* --- Bottom Layout --- */
+        .grid-layout { display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start; }
+        @media (max-width: 1100px) { .grid-layout { grid-template-columns: 1fr; } }
+
+        .bottom-card { background: #fff; border-radius: var(--radius-md); padding: 24px; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.02); height: 100%; display: flex; flex-direction: column; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 16px; }
+        .card-title { font-size: 18px; font-weight: 700; color: #1f1f1f; display: flex; align-items: center; gap: 8px;}
+
+        .tabs-nav { display: flex; background: #f0f2f5; padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-size: 14px; color: #666; border-radius: 8px; transition: 0.2s; font-weight: 600; }
+        .tab-btn.active { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        
+        .list-row { padding: 16px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #444; cursor: pointer; transition: all 0.2s ease; background: #fafafa; border: 1px solid transparent; }
+        .list-row:hover { background: #fff; border-color: #d6e4ff; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateX(4px); }
+        
+        /* Badge Styles */
+        .badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; margin-right: 10px; border: 1px solid; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+        .badge-doc { background: #f9f0ff; color: #722ed1; border-color: #d3adf7; width: 34px; } /* Document purple */
+        .badge-video { background: #f0f5ff; color: #1677ff; border-color: #adc6ff; }
+        .badge-qa { background:#fffbe6; color:#faad14; border-color:#ffe58f; }
+
+        .view-more-link {
+            display: block; text-align: center; margin-top: 15px; padding-top: 15px;
+            border-top: 1px dashed #eee; color: var(--text-sub); font-size: 13px;
+            cursor: pointer; transition: 0.2s; font-weight: 500;
+        }
+        .view-more-link:hover { color: var(--primary); }
+
+        .exam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+        .exam-card { border: 1px solid #f0f0f0; border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s ease; background: #fff; position: relative; overflow: hidden; }
+        .exam-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: #eee; }
+        .exam-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .exam-left { display: flex; flex-direction: column; gap: 6px; padding-left: 12px; }
+        .exam-title { font-size: 15px; font-weight: 700; color: #333; }
+        .exam-meta { font-size: 12px; color: #999; display: flex; gap: 10px; align-items: center; }
+        .exam-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end;}
+        .exam-score { font-size: 24px; font-weight: 800; line-height: 1; margin-bottom: 6px; letter-spacing: -1px; }
+        .exam-action { font-size: 12px; color: var(--primary); cursor: pointer; background: var(--primary-bg); padding: 4px 10px; border-radius: 12px; font-weight: 600; }
+        .exam-action:hover { background: #d6e4ff; }
+        .status-pass::before { background: var(--success); }
+        .status-pass .exam-score { color: var(--success); }
+        .status-pass { background: linear-gradient(to right, #f9fff0, #fff); border-color: #d9f7be; }
+        .status-fail::before { background: var(--error); }
+        .status-fail .exam-score { color: var(--error); }
+        .status-fail { background: linear-gradient(to right, #fff1f0, #fff); border-color: #ffccc7; }
+        .status-lock::before { background: #d9d9d9; }
+        .status-lock .exam-title { color: #aaa; }
+        .status-lock .exam-score { color: #e8e8e8; }
+        .status-lock .exam-action { display: none; }
+        .status-lock { background: #fafafa; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🚀 Partner Growth Platform <span class="version-badge">V15 Final Revision</span></h1>
+        <div style="font-size:13px; color:#666;">Last login: 2025-12-01</div>
+    </header>
+
+    <div class="main-card">
+        <div class="global-progress-wrapper">
+            <div class="global-header">
+                <span>🏆 Overall onboarding completion</span>
+                <div class="percent-container">
+                    <span id="globalPercentText" style="color:var(--primary); font-size:20px; font-weight:800;">0%</span>
+                    <div class="crown-icon" id="celebrationCrown">👑</div>
+                </div>
+            </div>
+            <div class="global-track">
+                <div class="global-bar" id="globalProgressBar"></div>
+            </div>
+        </div>
+        <div class="process-scroll-view" id="processContainer"></div>
+    </div>
+
+    <div class="grid-layout">
+        
+        <div class="bottom-card">
+            <div class="card-header">
+                <span class="card-title">📚 Empowerment Academy</span>
+            </div>
+            <div class="tabs-nav">
+                <div class="tab-btn active" onclick="switchTab(0, this)">📘 Operation Documents</div>
+                <div class="tab-btn" onclick="switchTab(1, this)">🎬 Training Videos</div>
+                <div class="tab-btn" onclick="switchTab(2, this)">❓ FAQs</div>
+            </div>
+            
+            <div style="flex:1;">
+                <div class="tab-pane active" id="pane-0" style="display:block">
+                    <div class="list-row">
+                        <span><span class="badge badge-doc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span> 2025 Platform Shipping Standards</span>
+                        <span style="color:#ccc">⬇️</span>
+                    </div>
+                    <div class="list-row">
+                        <span><span class="badge badge-doc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span> Product Listing & Review Standards</span>
+                        <span style="color:#ccc">⬇️</span>
+                    </div>
+                    <div class="list-row">
+                        <span><span class="badge badge-doc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span> Financial Reconciliation Guidelines</span>
+                        <span style="color:#ccc">⬇️</span>
+                    </div>
+                    <div class="list-row">
+                        <span><span class="badge badge-doc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span> Prohibited Words List V2.0</span>
+                        <span style="color:#ccc">⬇️</span>
+                    </div>
+                    <div class="view-more-link">View more documents ></div>
+                </div>
+
+                <div class="tab-pane" id="pane-1" style="display:none">
+                    <div class="list-row"><span><span class="badge badge-video">3min</span> Quick Overview of Backend Functions</span><span style="color:#ccc">▶</span></div>
+                    <div class="list-row"><span><span class="badge badge-video">5min</span> In-depth: Hot Product Selection Logic</span><span style="color:#ccc">▶</span></div>
+                    <div class="list-row"><span><span class="badge badge-video">10min</span> First Shipment Full Process Demo</span><span style="color:#ccc">▶</span></div>
+                    <div class="view-more-link">View more video courses ></div>
+                </div>
+
+                <div class="tab-pane" id="pane-2" style="display:none">
+                    <div class="list-row"><span><span class="badge badge-qa">Q</span> When will the deposit be refunded?</span></div>
+                    <div class="list-row"><span><span class="badge badge-qa">Q</span> Why was the review rejected?</span></div>
+                    <div class="list-row"><span><span class="badge badge-qa">Q</span> How to apply to modify company entity?</span></div>
+                    <div class="view-more-link">View more help center content ></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-card">
+            <div class="card-header">
+                <span class="card-title">🎓 Advanced Certification</span>
+                <span style="font-size:12px; color:#666; background:#f5f5f5; padding:4px 12px; border-radius:20px; font-weight:600;">Certificates obtained 2/7</span>
+            </div>
+            <div class="exam-grid">
+                <div class="exam-card status-pass">
+                    <div class="exam-left"><div class="exam-title">Q1 Newbie Started</div><div class="exam-meta"><span>✅ Passed</span><span>2025/10/01</span></div></div>
+                    <div class="exam-right"><div class="exam-score">95</div><div class="exam-action">View certificate</div></div>
+                </div>
+                <div class="exam-card status-pass">
+                    <div class="exam-left"><div class="exam-title">Q2 Bidding & Quoting</div><div class="exam-meta"><span>✅ Passed</span><span>2025/10/12</span></div></div>
+                    <div class="exam-right"><div class="exam-score">88</div><div class="exam-action">View certificate</div></div>
+                </div>
+                <div class="exam-card status-fail">
+                    <div class="exam-left"><div class="exam-title">Q3 Quality & Inspection</div><div class="exam-meta"><span style="color:var(--error)">❌ Failed</span><span>Please review</span></div></div>
+                    <div class="exam-right"><div class="exam-score">72</div><div class="exam-action">Retake now</div></div>
+                </div>
+                <div class="exam-card status-lock">
+                    <div class="exam-left"><div class="exam-title">Q4 Shipping & Packaging</div><div class="exam-meta"><span>🔒 Complete previous level first</span></div></div>
+                    <div class="exam-right"> <div class="exam-score">--</div> </div>
+                </div>
+                <div class="exam-card status-lock">
+                    <div class="exam-left"><div class="exam-title">Q5 Probation & Promotion/Demotion</div><div class="exam-meta"><span>🔒 Complete previous level first</span></div></div>
+                    <div class="exam-right"> <div class="exam-score">--</div> </div>
+                </div>
+                <div class="exam-card status-lock">
+                    <div class="exam-left"><div class="exam-title">Q6 Zem幂 Platform & PNM Team</div><div class="exam-meta"><span>🔒 Complete previous level first</span></div></div>
+                    <div class="exam-right"> <div class="exam-score">--</div> </div>
+                </div>
+                <div class="exam-card status-lock">
+                    <div class="exam-left"><div class="exam-title">Q7 Trusted Partners & PIP</div><div class="exam-meta"><span>🔒 Complete previous level first</span></div></div>
+                    <div class="exam-right"> <div class="exam-score">--</div> </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const workflow = [
+        {
+            startNode: "Registration",
+            endNode: "Approval Completed", 
+            phaseData: {
+                color: "#69c0ff",
+                title: "Phase 1: Complete Information",
+                tasks: [
+                    { text: "Edit processing capabilities", checked: true }, 
+                    { text: "Edit company information", checked: true },
+                    { text: "Upload equipment list", checked: false } 
+                ],
+                docs: ["Filling example instructions", "Company information editing guide"] 
+            }
+        },
+        {
+            startNode: "Audit Completed",
+            endNode: "Probation",
+            phaseData: {
+                color: "#40a9ff",
+                title: "Phase 2: Qualification Verification",
+                tasks: [
+                    { text: "Upload ISO certificate", checked: false },
+                    { text: "Complete test parts", checked: false }
+                ],
+                docs: ["EZ pass manual", "Test parts shipping specifications"]
+            }
+        },
+        {
+            startNode: "Probation Period",
+            endNode: "First Order",
+            phaseData: {
+                color: "#1890ff",
+                title: "Phase 3: New Partner Training",
+                tasks: [
+                    { text: "Basic operation training", checked: false },
+                    { text: "Partner Test Q1", checked: false } 
+                ],
+                docs: ["Basic training video collection", "Q1 exam syllabus"]
+            }
+        },
+        {
+            startNode: "First Order",
+            endNode: "Fifth Order",
+            phaseData: {
+                color: "#096dd9",
+                title: "Phase 4: Advanced Testing",
+                tasks: [
+                    { text: "Partner Test Q2", checked: false }, 
+                    { text: "Partner Test Q3", checked: false },
+                    { text: "Partner Test Q4", checked: false }
+                ],
+                docs: ["Advanced test question bank", "Common error cases"]
+            }
+        },
+        {
+            startNode: "Fifth Order",
+            endNode: "Trusted Partner",
+            phaseData: {
+                color: "#0050b3",
+                title: "Phase 5: Final Compliance",
+                tasks: [
+                    { text: "Partner Test Q5", checked: false }, 
+                    { text: "Meet quality score standards", checked: false },
+                    { text: "Meet OTS score standards", checked: false }
+                ],
+                docs: ["General rules for partner management", "Quality scoring details"]
+            }
+        }
+    ];
+
+    const processContainer = document.getElementById('processContainer');
+    const globalProgressBar = document.getElementById('globalProgressBar');
+    const globalPercentText = document.getElementById('globalPercentText');
+    const celebrationCrown = document.getElementById('celebrationCrown'); 
+
+    function renderProcess() {
+        processContainer.innerHTML = '';
+        let previousPhaseCompleted = true; 
+        let completedPhasesCount = 0; 
+
+        workflow.forEach((step, index) => {
+            const phase = step.phaseData;
+            const total = phase.tasks.length;
+            const checked = phase.tasks.filter(t => t.checked).length;
+            
+            let percent = Math.round((checked / total) * 100);
+            if (index === 1 && phase.tasks.some(t => t.checked)) { percent = 100; }
+
+            const isCompleted = percent === 100;
+            const isLocked = !previousPhaseCompleted;
+
+            if (isCompleted) { completedPhasesCount++; }
+
+            const tasksHtml = phase.tasks.map((t, i) => `
+                <div class="task-item ${t.checked ? 'checked' : ''}" onclick="toggleTask(${index}, ${i}, ${isLocked})">
+                    <div class="custom-checkbox">${t.checked ? '✔' : ''}</div>
+                    <span>${t.text}</span>
+                </div>
+            `).join('');
+
+            const docsHtml = phase.docs.map(d => `<a href="#" class="doc-link">📄 ${d}</a>`).join('');
+
+            const lockMaskHtml = isLocked ? `
+                <div class="lock-mask">
+                    <div style="font-size:20px; margin-bottom:5px;">🔒</div>
+                    <div class="lock-text">Complete previous phase to unlock</div>
+                </div>` : '';
+
+            let statusClass = isLocked ? 'locked' : (isCompleted ? 'done' : 'active');
+
+            const stepUnit = document.createElement('div');
+            stepUnit.className = `process-step-unit ${statusClass}`;
+            
+            stepUnit.innerHTML = `
+                <div class="step-indicator-row">
+                    <div class="node-circle">${index === 0 ? '✔' : (statusClass === 'locked' ? index+1 : (statusClass === 'done' ? '✔' : index+1))}</div>
+                    <div class="node-label">${step.startNode}</div>
+                    <div class="step-connector-line"></div>
+                </div>
+                <div class="step-card-container">
+                    <div class="phase-card">
+                        <div class="phase-header-box" style="background: ${phase.color}">
+                            <span class="phase-header-title">${phase.title}</span>
+                            <span class="col-percent">${percent}%</span>
+                        </div>
+                        <div class="phase-body">
+                            ${lockMaskHtml}
+                            <div class="section-label">📋 Key Tasks</div>
+                            <div class="task-list">${tasksHtml}</div>
+                            <div class="doc-list">
+                                <div class="section-label">📚 Recommended Materials</div>
+                                ${docsHtml}
+                            </div>
+                        </div>
+                        <div class="celebration-overlay" id="celeb-${index}">
+                            <div style="font-size:30px;">🎉</div>
+                            <div style="font-weight:bold; color:#52c41a;">Phase completed</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            processContainer.appendChild(stepUnit);
+            previousPhaseCompleted = isCompleted;
+        });
+
+        const endUnit = document.createElement('div');
+        const finalStatus = previousPhaseCompleted ? 'done' : 'locked'; 
+        endUnit.className = `process-step-unit end-unit ${finalStatus}`;
+        endUnit.innerHTML = `
+            <div class="step-indicator-row">
+                <div class="node-circle" style="${finalStatus === 'done' ? 'background:var(--primary); color:#fff; border-color:var(--primary);' : ''}">
+                    ${finalStatus === 'done' ? '★' : '6'}
+                </div>
+                <div class="node-label" style="font-weight:700;">${workflow[workflow.length-1].endNode}</div>
+            </div>
+        `;
+        processContainer.appendChild(endUnit);
+
+        const globalPercent = completedPhasesCount * 20;
+        globalProgressBar.style.width = `${globalPercent}%`;
+        globalPercentText.innerText = `${globalPercent}%`;
+
+        if (globalPercent === 100) { celebrationCrown.classList.add('show'); } 
+        else { celebrationCrown.classList.remove('show'); }
+    }
+
+    window.toggleTask = function(phaseIdx, taskIdx, isLocked) {
+        if (isLocked) return;
+        const phase = workflow[phaseIdx].phaseData;
+        const wasCompleted = (phaseIdx === 1) ? phase.tasks.some(t => t.checked) : phase.tasks.every(t => t.checked);
+        phase.tasks[taskIdx].checked = !phase.tasks[taskIdx].checked;
+        renderProcess();
+        const isNowCompleted = (phaseIdx === 1) ? phase.tasks.some(t => t.checked) : phase.tasks.every(t => t.checked);
+        if (!wasCompleted && isNowCompleted) { triggerCelebration(phaseIdx); }
+    }
+
+    function triggerCelebration(index) {
+        const overlay = document.getElementById(`celeb-${index}`);
+        if(overlay) {
+            overlay.classList.add('show');
+            setTimeout(() => overlay.classList.remove('show'), 2000);
+        }
+    }
+
+    window.switchTab = function(index, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.style.display='none');
+        btn.classList.add('active');
+        document.getElementById(`pane-${index}`).style.display = 'block';
+    }
+
+    renderProcess();
+</script>
+
+</body>
+</html>
